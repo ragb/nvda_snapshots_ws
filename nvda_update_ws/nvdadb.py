@@ -73,5 +73,5 @@ def cron_update_snapshots():
 
 
 if __name__ == '__main__':
-    nvdadb.init()
+    init()
     cron_update_snapshots()
