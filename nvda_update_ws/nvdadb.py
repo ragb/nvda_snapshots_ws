@@ -70,6 +70,8 @@ def cron_update_snapshots():
                 log.info("Branch %s updated to %d" % (b.branch, new_revision))
         except Exception, e:
             log.exception(e)
-            
-            
 
+
+if __name__ == '__main__':
+    nvdadb.init()
+    cron_update_snapshots()
