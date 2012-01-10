@@ -24,11 +24,12 @@ create table versions(
 	date timestamp);
 """]
 
+_dbname = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'db.sqlite3')
 _db = None
 
 def init(create=False):
     global _db
-    _db = web.database(dbn="sqlite", db="db.sqlite")
+    _db = web.database(dbn="sqlite", db=_dbname)
     if create:
         for stm in _tables_sql:
             _db.query(stm)

@@ -9,7 +9,6 @@ urls = (r"/LastSnapshot/(\w+)", "LastSnapshot",)
 app = web.application(urls, globals(), True)
 
 
-
 def jsonify(fun):
     def new(*args, **kwargs):
         ret = fun(*args, **kwargs)
@@ -30,5 +29,6 @@ class LastSnapshot(object):
         except IndexError:
             web.NotFound()
 
+application = app.wsgifunc()
 if __name__ == '__main__':
     app.run()
