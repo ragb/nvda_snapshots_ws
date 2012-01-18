@@ -1,0 +1,29 @@
+<html>
+<head>
+<title>JQuery NVDA Update WS Example</title>
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+<script type="text/javascript">
+$(document).ready(function() {
+	var ws_url = "http://pt.nvda-community.org/ws/LastSnapshot/main?callback=?";
+	// Call webservice using JSONP
+	$.getJSON(ws_url, function(data) {
+		// Here you should grab the data you need and print or something
+		// This just prints a table with some keys of interest
+		var keys = ["branch", "revision", "portable", "installer"];
+		var rows = [];
+		$.each(keys, function(key, val) {
+			rows.push("<tr><td>" + val + "</td><td>" + data[val] + "</td></tr>");
+		});
+		// Put the generated HTML in the #nvda_placeholder div.
+		$("#nvda_placeholder").html("<table>" + rows.join('') + "</table>");
+	});
+});
+// -->
+</script>
+<body>
+<h1>NVDA Last Snapshot</h1>
+<div id="nvda_placeholder">
+<noscript>You need to have javascript active to run this example</noscript>
+</div>
+</body>
+</html>
