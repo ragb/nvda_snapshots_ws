@@ -12,8 +12,12 @@ app = web.application(urls, globals(), True)
 def jsonify(fun):
     def new(*args, **kwargs):
         ret = fun(*args, **kwargs)
+        ret = json.dumps(ret, default=str)
+        # Support JSONP requests
+        if "callback" in web.input():
+            ret = "%s(%s);" % (web.input().get('callback'), ret)
         web.header('content-type', 'application/json')
-        return json.dumps(ret, default=str)
+        return ret
     return new
 
 class LastSnapshot(object):
