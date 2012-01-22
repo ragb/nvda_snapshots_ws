@@ -23,15 +23,16 @@ def jsonify(fun):
 class LastSnapshot(object):
     @jsonify
     def GET(self,  branch):
-        try:
-            s = nvdadb.get_last_snapshot(branch)
-            i = web.input()
-            if 'type' in i and i.type in ('portable', 'installer'):
-                web.found(s[i.type])
-            else:
-                return s
-        except IndexError:
-            web.NotFound()
+        s = nvdadb.Snapshot.query.filter_by(branch=branch).first()
+        i = web.input()
+        if 'type' in i and i.type in ('portable', 'installer'):
+            link = getattr(s, "%s_link" % type)
+            web.found(link)
+        else:
+            d = s.to_dict().copy()
+            d['portable'] = s.portable_link
+            d['installer'] = s.installer_link
+            return d
 
 application = app.wsgifunc()
 if __name__ == '__main__':

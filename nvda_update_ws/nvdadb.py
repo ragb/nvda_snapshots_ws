@@ -4,66 +4,21 @@ import os
 import os.path
 import re
 import urllib2
-import web
+from elixir import *
 
 log = logging.getLogger(__name__)
 
-_tables_sql = [
-"drop table if exists snapshots;",
-"""
-create table snapshots(
-	branch varchar(30) unique not null primary key,
-	revision int,
-	active bool default 't',
-	updated_on timestamp);
-""",
-"drop table if exists versions;",
-"""
-create table versions(
-	version varchar(30) unique not null primary key,
-	stability char(10),
-	date timestamp);
-"""]
+
 
 _dbname = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'db.sqlite3')
-_db = None
+metadata.bind = "sqlite:///%s" % _dbname
+metadata.bind.echo = True
 
 def init(create=False):
-    global _db
-    _db = web.database(dbn="sqlite", db=_dbname)
-    if create:
-        for stm in _tables_sql:
-            _db.query(stm)
+    setup_all(True)
 
 
-def create_snapshot_branch(branch):
-    _db.insert("snapshots", branch=branch)
 
-def update_snapshot_branch(branch, revision):
-    _db.update("snapshots", "branch=$branch", vars=locals(),
-        revision=revision, updated_on=datetime.datetime.now())
-        
-def get_last_snapshot(branch):
-    return Snapshot(**_db.where("snapshots", branch=branch)[0])
-
-def get_snapshot_branches():
-    return (Snapshot(row) for row in _db.select("snapshots"))
-
-def create_version(version, stability='stable'):
-    v = NVDAVersion(version=version)
-    _db.insert("versions", version=version, stability=v['stability'], date=datetime.datetime.now())
-
-def delete_version(version):
-    _db.delete('versions', version=version)
-
-def get_version(version):
-    rows = _db.where("versions", version=version)
-    return NVDAVersion(**rows[0])
-
-def get_latest_version(stabilities=['stable']):
-    versions = [NVDAVersion(**row) for row in _db.select('versions', where="stability in(" + ", ".join(["'" + s + "'" for s in stabilities]) + ')')]
-    s = sorted(versions, reverse=True)
-    return versions[0] if versions else None
 
 class NVDAVersion(dict):
     stabilities = {'beta' : 1, 'rc' : 2, 'stable' : 3}
@@ -95,28 +50,21 @@ class NVDAVersion(dict):
         or (self._testing[1] - other._testing[1])
 
 
-class Snapshot(dict):
-    def __init__(self, *args, **kwargs):
-        dict.__init__(self, *args, **kwargs)
-        template = "http://www.nvda-project.org/snapshots/%(branch)s/nvda_snapshot_%(branch)s-%(revision)d_%(type)s.exe"
-        self['portable'] = template % dict(type='portable', **self)
-        self['installer'] = template % dict(type='installer', **self)
+class Snapshot(Entity):
+    branch = Field(Unicode(30), primary_key=True, required=True)
+    revision = Field(Integer)
+    active = Field(Boolean, default=True)
+    uppdated_on = Field(DateTime, default=datetime.datetime.now)
+    template = "http://www.nvda-project.org/snapshots/%(branch)s/nvda_snapshot_%(branch)s-%(revision)d_%(type)s.exe"
+    def __unicode__(self):
+        return "<%s: %s>" % (self.__name___, self.branch)
+
+    @property
+    def portable_link(self):
+        return self.template % dict(type='portable', **self.to_dict())
+
+    @property
+    def installer_link(self):
+        return self.template % dict(type='installer', **self.to_dict())
 
 
-
-def cron_update_snapshots():
-    branches = [b for b in _db.select("snapshots", where="active = 't'")]
-    template = "http://www.nvda-project.org/snapshots/%s/.last_snapshot"
-    for b in branches:
-        try:
-            new_revision = int(urllib2.urlopen(template % b.branch).read())
-            if new_revision != b.revision:
-                update_snapshot_branch(b.branch, new_revision)
-                log.info("Branch %s updated to %d" % (b.branch, new_revision))
-        except Exception, e:
-            log.exception(e)
-
-
-if __name__ == '__main__':
-    init()
-    cron_update_snapshots()
