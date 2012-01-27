@@ -39,6 +39,14 @@ class NVDACmd(cmd.Cmd):
         sys.exit(0)
     do_exit = do_quit
 
-if __name__ == '__main__':
+
+def main(args):
     init()
-    NVDACmd().cmdloop()
+    c = NVDACmd()
+    if len(args) <= 1:
+        c.cmdloop()
+    else:
+        c.onecmd(" ".join(args[1:]))
+
+if __name__ == '__main__':
+    main(sys.argv)
