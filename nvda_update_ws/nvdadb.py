@@ -20,36 +20,6 @@ def init(create=False):
 
 
 
-class NVDAVersion(dict):
-    stabilities = {'beta' : 1, 'rc' : 2, 'stable' : 3}
-    def __init__(self, *args, **kwargs):
-        dict.__init__(self, *args, **kwargs)
-        # parce version (use regexp instead?)
-        self._parts = self['version'].split('.')
-        self._testing = (self.stabilities['stable'], 0)
-        for t in NVDAVersion.stabilities.keys():
-            if t in self._parts[-1]:
-                tmp = self._parts[-1].split(t)
-                self._testing = (self.stabilities[t], int(tmp[1]))
-                self._parts[-1] = tmp[0]
-        self._parts = [int(p) for p in self._parts]
-        self['stability'] = self._testing[0]
-        # create links
-        template = "http://sourceforge.net/projects/nvda/files/releases/%(version)s/nvda_%(version)s_%(type)s.exe/download"
-        self['installer'] = template % dict(type='installer', **self)
-        self['portable'] = template % dict(type='portable', **self)
-
-    def __cmp__(self, other):
-        l = min(len(self._parts), len(other._parts))
-        for i in range(l):
-            r = self._parts[i] - other._parts[i]
-            if r != 0:
-                return r
-        return (len(self._parts) - len(other._parts)) \
-        or (self._testing[0] - other._testing[0])\
-        or (self._testing[1] - other._testing[1])
-
-
 class Snapshot(Entity):
     branch = Field(Unicode(30), primary_key=True, required=True)
     revision = Field(Integer)
@@ -68,3 +38,19 @@ class Snapshot(Entity):
         return self.template % dict(type='installer', **self.to_dict())
 
 
+class StableVersion(Entity):
+    version = Field(Unicode(10), primary_key=True, required=True)
+    updated_on = Field(DateTime, default=datetime.datetime.now)
+    template = "http://sourceforge.net/projects/nvda/files/releases/%(version)s/nvda_%(version)s_%(type)s.exe/download"
+
+    def __repr__(self):
+        return "<StableVersion: %s>" % self.version
+
+
+    @property
+    def installer_link(self):
+        return self.template % {'version' : self.version, 'type' : 'installer'}
+
+    @property
+    def portable_link(self):
+        return self.template % {'version' : self.version, 'type' : 'portable'}

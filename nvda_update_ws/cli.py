@@ -29,6 +29,11 @@ class NVDACmd(cmd.Cmd):
         session.commit()
         log.info("Created snapshot branch %s.", s.branch)
 
+    def do_create_version(self, line):
+        v = StableVersion(version=line.strip())
+        session.commit()
+        log.info("Created version %s." % v.version)
+
     def do_snapshot_revision(self, line):
         """ Gets the revision for a snapshot branch """
         s = Snapshot.query.filter_by(branch=line.strip()).first()

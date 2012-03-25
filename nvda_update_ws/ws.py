@@ -5,7 +5,9 @@ import nvdadb
 
 nvdadb.init()
 
-urls = (r"/LastSnapshot/(\w+)", "LastSnapshot",)
+urls = (r"/LastSnapshot/(\w+)", "LastSnapshot",
+    r"/LastStable", "LastStable",)
+
 app = web.application(urls, globals(), True)
 
 
@@ -33,6 +35,22 @@ class LastSnapshot(object):
             d['portable'] = s.portable_link
             d['installer'] = s.installer_link
             return d
+
+class LastStable(object):
+
+    @jsonify
+    def GET(self):
+        v = nvdadb.StableVersion.query.order_by(nvdadb.StableVersion.updated_on.desc()).first()
+        i = web.input()
+        if 'type' in i and i.type in ('portable', 'installer'):
+            link = getattr(v, "%s_link" % type)
+            web.found(link)
+        else:
+            d = v.to_dict().copy()
+            d['portable'] = v.portable_link
+            d['installer'] = v.installer_link
+            return d
+
 
 application = app.wsgifunc()
 if __name__ == '__main__':
